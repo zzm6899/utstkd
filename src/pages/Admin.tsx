@@ -27,7 +27,7 @@ export const Admin: React.FC = () => {
     }
   };
 
-  const updateField = (path: string, value: any) => {
+  const updateField = (path: string, value: string | number | boolean | string[]) => {
     const keys = path.split('.');
     const newContent = JSON.parse(JSON.stringify(editContent));
     let obj = newContent;
@@ -40,7 +40,7 @@ export const Admin: React.FC = () => {
     setEditContent(newContent);
   };
 
-  const updateArrayItem = (path: string, index: number, field: string, value: any) => {
+  const updateArrayItem = (path: string, index: number, field: string, value: string | number | boolean) => {
     const keys = path.split('.');
     const newContent = JSON.parse(JSON.stringify(editContent));
     let obj = newContent;
@@ -79,7 +79,7 @@ export const Admin: React.FC = () => {
             {['home', 'about', 'training', 'contact'].map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab as any)}
+                onClick={() => setActiveTab(tab as 'home' | 'about' | 'training' | 'contact')}
                 className={`w-full text-left px-4 py-3 rounded-lg font-semibold capitalize transition-colors ${
                   activeTab === tab
                     ? 'bg-gold text-uts-navy'

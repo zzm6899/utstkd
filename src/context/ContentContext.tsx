@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import type { WebsiteContent } from '../types/content';
 import { defaultContent } from '../data/content';
 
@@ -13,25 +13,20 @@ const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'utstkd_website_content';
 
-export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [content, setContent] = useState<WebsiteContent>(defaultContent);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Load content from localStorage on mount
-  useEffect(() => {
-    const savedContent = localStorage.getItem(STORAGE_KEY);
-    if (savedContent) {
-      try {
-        setContent(JSON.parse(savedContent));
-      } catch (error) {
-        console.error('Failed to parse saved content, using defaults', error);
-        setContent(defaultContent);
-      }
-    } else {
-      setContent(defaultContent);
+function loadInitialContent(): WebsiteContent {
+  const savedContent = localStorage.getItem(STORAGE_KEY);
+  if (savedContent) {
+    try {
+      return JSON.parse(savedContent) as WebsiteContent;
+    } catch (error) {
+      console.error('Failed to parse saved content, using defaults', error);
     }
-    setIsLoaded(true);
-  }, []);
+  }
+  return defaultContent;
+}
+
+export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [content, setContent] = useState<WebsiteContent>(loadInitialContent);
 
   const updateContent = (newContent: WebsiteContent) => {
     setContent(newContent);
@@ -46,10 +41,6 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  if (!isLoaded) {
-    return <div className="flex items-center justify-center min-h-screen bg-slate-900">Loading...</div>;
-  }
-
   return (
     <ContentContext.Provider value={{ content, updateContent, saveContent, resetContent }}>
       {children}
@@ -57,6 +48,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useContent = () => {
   const context = useContext(ContentContext);
   if (!context) {
