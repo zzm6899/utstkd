@@ -1,0 +1,20 @@
+# Use this to build and run locally without GitHub Actions
+# docker compose -f docker-compose.build.yml up --build -d
+
+services:
+  utstkd-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: utstkd-website
+    restart: unless-stopped
+    ports:
+      - "${PORT:-80}:80"
+    environment:
+      - TZ=Australia/Sydney
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

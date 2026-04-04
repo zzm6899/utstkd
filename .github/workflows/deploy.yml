@@ -1,0 +1,155 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: Force deploy even if tests fail
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  NODE_VERSION: '22'
+
+jobs:
+  # ── Job 1: Type-check + Lint + Build ──────────────────────────────────────
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --frozen-lockfile
+
+      - name: TypeScript type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  # ── Job 2: Docker build & push to GHCR ───────────────────────────────────
+  docker:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name != 'pull_request'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  # ── Job 3: Deploy to TrueNAS (SSH) ───────────────────────────────────────
+  deploy:
+    name: Deploy to TrueNAS
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to TrueNAS via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.TRUENAS_HOST }}
+          username: ${{ secrets.TRUENAS_USER }}
+          key: ${{ secrets.TRUENAS_SSH_KEY }}
+          port: ${{ secrets.TRUENAS_PORT || 22 }}
+          script: |
+            set -e
+            echo "→ Pulling latest image..."
+            docker pull ghcr.io/${{ github.repository }}:latest
+
+            echo "→ Stopping old container..."
+            docker compose -f ${{ secrets.DEPLOY_PATH }}/docker-compose.yml down --remove-orphans || true
+
+            echo "→ Copying compose file..."
+            cp ${{ secrets.DEPLOY_PATH }}/docker-compose.yml /tmp/docker-compose-backup.yml || true
+
+            echo "→ Starting new container..."
+            docker compose -f ${{ secrets.DEPLOY_PATH }}/docker-compose.yml up -d
+
+            echo "→ Waiting for health check..."
+            sleep 10
+            docker compose -f ${{ secrets.DEPLOY_PATH }}/docker-compose.yml ps
+
+            echo "→ Pruning old images..."
+            docker image prune -f
+
+            echo "✅ Deployment complete!"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🚀 Deployed successfully to ${{ vars.SITE_URL }}"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed! Check logs above."
+          exit 1

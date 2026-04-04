@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0D1B2A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1565C0;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #F5C518;
+}
+
+/* Global smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Ensure body takes full height */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom utility classes for specific design needs */
+.hero-overlay {
+  position: relative;
+  background: linear-gradient(135deg, rgba(13, 27, 42, 0.7) 0%, rgba(21, 101, 192, 0.5) 100%);
+}
+
+.text-gold {
+  color: #F5C518;
+}
+
+.bg-uts-blue {
+  background-color: #1565C0;
+}
+
+.bg-uts-navy {
+  background-color: #0D1B2A;
+}
+
+.border-gold {
+  border-color: #F5C518;
+}
+
+/* Korean font support */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+.korean-text {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Shadow utilities */
+.shadow-lg-custom {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.shadow-md-custom {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}

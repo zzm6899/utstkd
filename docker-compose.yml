@@ -1,0 +1,33 @@
+services:
+  utstkd-web:
+    image: ghcr.io/${GITHUB_REPOSITORY:-yourusername/utstkd}:latest
+    # OR build locally:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    container_name: utstkd-website
+    restart: unless-stopped
+    ports:
+      - "${PORT:-80}:80"
+    environment:
+      - TZ=Australia/Sydney
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - web
+
+  # Optional: Traefik reverse proxy labels (for TrueNAS with Traefik)
+  # Uncomment if using Traefik for SSL termination
+  # labels:
+  #   - "traefik.enable=true"
+  #   - "traefik.http.routers.utstkd.rule=Host(`utstkd.yourdomain.com`)"
+  #   - "traefik.http.routers.utstkd.entrypoints=websecure"
+  #   - "traefik.http.routers.utstkd.tls.certresolver=letsencrypt"
+
+networks:
+  web:
+    external: false

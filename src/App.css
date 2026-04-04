@@ -1,0 +1,12 @@
+/* App.css - minimal styles, most styling is in Tailwind */
+
+/* Ensure full height layout */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1;
+}
