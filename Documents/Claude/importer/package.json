@@ -1,0 +1,57 @@
+{
+  "name": "photo-importer",
+  "productName": "Photo Importer",
+  "version": "1.3.3",
+  "description": "Import photos and videos from cameras and SD cards",
+  "main": ".vite/build/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "license:keypair": "node scripts/setup-license-keys.mjs",
+    "license:generate": "node scripts/generate-license.mjs",
+    "license:console": "node scripts/license-console.mjs",
+    "update:publish": "node scripts/publish-update-release.mjs",
+    "models": "node scripts/download-models.mjs",
+    "models:publish": "node scripts/publish-models.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Zac M",
+    "email": "help@z2hs.au"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.1",
+    "@electron-forge/maker-dmg": "^7.11.1",
+    "@electron-forge/maker-squirrel": "^7.11.1",
+    "@electron-forge/maker-zip": "^7.11.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
+    "@electron-forge/plugin-fuses": "^7.11.1",
+    "@electron-forge/plugin-vite": "^7.11.1",
+    "@electron/fuses": "^1.8.0",
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "@vitest/coverage-v8": "^4.0.18",
+    "electron": "40.6.1",
+    "tailwindcss": "^4.2.1",
+    "typescript": "~5.7.0",
+    "vite": "^6.4.1",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "basic-ftp": "5.0.5",
+    "electron-squirrel-startup": "^1.0.1",
+    "exifr": "7.1.3",
+    "onnxruntime-node": "1.21.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}

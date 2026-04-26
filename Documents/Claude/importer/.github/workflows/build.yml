@@ -1,0 +1,167 @@
+name: Build And Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            label: macos
+          - os: windows-latest
+            label: windows
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      - run: npm run make
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.label }}-build
+          path: out/make/**/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      TAG_NAME: ${{ github.ref_name }}
+      VERSION: ${{ github.ref_name }}
+      UPDATE_ADMIN_ENDPOINT: ${{ secrets.UPDATE_ADMIN_ENDPOINT }}
+      UPDATE_ADMIN_API_TOKEN: ${{ secrets.UPDATE_ADMIN_API_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          find artifacts -type f \( -name '*.dmg' -o -name '*.zip' -o -name '*.exe' -o -name '*.nupkg' -o -name 'RELEASES' \) -print | while read -r file; do
+            cp "$file" release-assets/
+          done
+          ls -la release-assets
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$TAG_NAME" release-assets/* \
+            --verify-tag \
+            --title "$TAG_NAME" \
+            --notes "Automated release for $TAG_NAME"
+
+      - name: Upload hosted artifacts to update admin
+        if: ${{ env.UPDATE_ADMIN_ENDPOINT != '' && env.UPDATE_ADMIN_API_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${VERSION#v}"
+
+          WINDOWS_EXE="$(find release-assets -maxdepth 1 -type f -name '*.exe' | head -n 1 || true)"
+          WINDOWS_NUPKG="$(find release-assets -maxdepth 1 -type f -name '*.nupkg' | head -n 1 || true)"
+          WINDOWS_RELEASES="$(find release-assets -maxdepth 1 -type f -name 'RELEASES' | head -n 1 || true)"
+          WINDOWS_ZIP="$(find release-assets -maxdepth 1 -type f -name '*win*.zip' | head -n 1 || true)"
+          MAC_DMG="$(find release-assets -maxdepth 1 -type f -name '*.dmg' | head -n 1 || true)"
+          MAC_ZIP="$(find release-assets -maxdepth 1 -type f \( -name '*darwin*.zip' -o -name '*mac*.zip' \) | head -n 1 || true)"
+
+          if [[ -n "$WINDOWS_NUPKG" ]]; then
+            node scripts/publish-update-release.mjs \
+              --endpoint "$UPDATE_ADMIN_ENDPOINT" \
+              --token "$UPDATE_ADMIN_API_TOKEN" \
+              --platform windows \
+              --file "$WINDOWS_NUPKG" \
+              --upload-only
+          fi
+          if [[ -n "$WINDOWS_RELEASES" ]]; then
+            node scripts/publish-update-release.mjs \
+              --endpoint "$UPDATE_ADMIN_ENDPOINT" \
+              --token "$UPDATE_ADMIN_API_TOKEN" \
+              --platform windows \
+              --file "$WINDOWS_RELEASES" \
+              --upload-only
+          fi
+          if [[ -n "$WINDOWS_ZIP" ]]; then
+            node scripts/publish-update-release.mjs \
+              --endpoint "$UPDATE_ADMIN_ENDPOINT" \
+              --token "$UPDATE_ADMIN_API_TOKEN" \
+              --platform windows \
+              --file "$WINDOWS_ZIP" \
+              --upload-only
+          fi
+          if [[ -n "$MAC_ZIP" ]]; then
+            node scripts/publish-update-release.mjs \
+              --endpoint "$UPDATE_ADMIN_ENDPOINT" \
+              --token "$UPDATE_ADMIN_API_TOKEN" \
+              --platform macos \
+              --file "$MAC_ZIP" \
+              --upload-only
+          fi
+          if [[ -n "$MAC_DMG" ]]; then
+            node scripts/publish-update-release.mjs \
+              --endpoint "$UPDATE_ADMIN_ENDPOINT" \
+              --token "$UPDATE_ADMIN_API_TOKEN" \
+              --version "$VERSION" \
+              --platform macos \
+              --release-name "Photo Importer $VERSION" \
+              --file "$MAC_DMG" \
+              --release-url "${UPDATE_ADMIN_ENDPOINT%/}/releases/$VERSION" \
+              --notes "Automated release for $TAG_NAME" \
+              --channel stable \
+              --rollout live
+          fi
+          if [[ -n "$WINDOWS_EXE" ]]; then
+            node scripts/publish-update-release.mjs \
+              --endpoint "$UPDATE_ADMIN_ENDPOINT" \
+              --token "$UPDATE_ADMIN_API_TOKEN" \
+              --version "$VERSION" \
+              --platform windows \
+              --release-name "Photo Importer $VERSION" \
+              --file "$WINDOWS_EXE" \
+              --release-url "${UPDATE_ADMIN_ENDPOINT%/}/releases/$VERSION" \
+              --notes "Automated release for $TAG_NAME" \
+              --channel stable \
+              --rollout live
+          fi
