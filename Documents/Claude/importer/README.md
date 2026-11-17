@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <em>Canceled Adobe, so no more Lightroom Classic for me.<br/>I realized I missed the way it imported photos, so I built my own :) (with the help of Claudio)</em>
+  <em>I stopped using Lightroom Classic after cancelling Adobe. I missed the way it handled imports, so I built my own with Claudio’s help.</em>
 </p>
 
 <p align="center">
@@ -65,15 +65,15 @@ For cameras and NAS devices that expose an FTP server (Canon EOS / Nikon WT / So
 - User, password
 - Remote path (commonly `/DCIM`)
 
-**Test** probes the connection and counts media. **Mirror & Scan** downloads everything under the remote path into a staging directory inside the app's user data folder and runs the normal scan over it — so EXIF, duplicate detection, picks and imports all behave the same as a local card. Re-mirrors are incremental; files already present at the same size are skipped.
+Click **Test** to check the connection and count the media files. **Mirror & Scan** copies the remote folder into a staging directory inside the app’s user data folder, then scans it like a local card. You can use the same EXIF, duplicate detection, picks and import tools. On later scans, the app skips files it already has at the same size.
 
 ## Protected / locked files first
 
-Any file that is read-only at the filesystem level (e.g. you used the camera's in-body "Protect" button, or your card is physically write-locked) is surfaced at the top of the grid with a green **PROTECTED** badge. Pair with the **Protected** filter for a clean keepers-only view.
+Files marked read-only appear at the top of the grid with a green **PROTECTED** badge. This includes files you protected in the camera or files on a write-locked card. Select the **Protected** filter to see those files on their own.
 
 ## GPU Acceleration (Face Recognition)
 
-Face recognition is powered by ONNX Runtime and automatically uses **GPU acceleration** when available, significantly speeding up face detection and embedding across large photo batches.
+Face recognition runs through ONNX Runtime. When a supported GPU is available, the app uses it to speed up face detection and embeddings across large batches.
 
 ### How it works
 
@@ -141,7 +141,7 @@ Requires **Node 20+**.
 
 ### Windows one-shot setup
 
-Prefer clicking over typing? Double-click `scripts\setup-windows.cmd` (or run it from a Command Prompt in the repo root). It verifies Node 20+, installs dependencies, and shows a menu for dev / build / install-only. You can also pass the action directly:
+Double-click `scripts\setup-windows.cmd` or run it from a Command Prompt in the repo root. It checks for Node 20+, installs dependencies and lets you choose dev mode, a build or dependencies only. You can also pass the action on the command line:
 
 ```cmd
 scripts\setup-windows.cmd dev      :: install + npm start (dev mode)

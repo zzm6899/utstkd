@@ -1,15 +1,15 @@
 # TrueNAS Update Stack
 
-This stack hosts:
+This stack provides two endpoints:
 
 - `admin.culler.z2hs.au` for the admin panel
 - `updates.culler.z2hs.au` for the desktop app update API and download redirects
 
-The Node service listens on `0.0.0.0:5071` inside the app container, and the reverse proxy publishes it over HTTPS.
+Inside the container, the Node service listens on `0.0.0.0:5071`. The reverse proxy serves both endpoints over HTTPS.
 
 ## TrueNAS Apps UI
 
-If you want this to show up in the TrueNAS Apps UI as a Custom App, use:
+To install it as a Custom App in TrueNAS, use this file:
 
 - [custom-app.yaml](/C:/Users/24681/Documents/Claude/importer/deploy/truenas/custom-app.yaml)
 
@@ -78,11 +78,11 @@ node scripts/publish-update-release.mjs \
   --rollout live
 ```
 
-If your repo is private, you can also configure the admin panel to inspect the latest GitHub release from TrueNAS itself by setting:
+For a private repo, set these variables so the admin panel can look up the latest GitHub release from TrueNAS:
 
 - `GITHUB_RELEASE_OWNER`
 - `GITHUB_RELEASE_REPO`
 - `GITHUB_RELEASE_TOKEN`
 - `GITHUB_API_BASE_URL` (optional)
 
-Those values are now exposed in [custom-app.yaml](/C:/Users/24681/Documents/Claude/importer/deploy/truenas/custom-app.yaml), so they stay easy to edit from the TrueNAS Apps UI.
+[custom-app.yaml](/C:/Users/24681/Documents/Claude/importer/deploy/truenas/custom-app.yaml) exposes these values so you can edit them in the TrueNAS Apps UI.
